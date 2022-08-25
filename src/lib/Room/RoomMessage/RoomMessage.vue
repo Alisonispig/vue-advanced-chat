@@ -1,4 +1,5 @@
 <template>
+  <transition name="vac-fade-message" tag="span">
 	<div :id="message._id" ref="message" class="vac-message-wrapper">
 		<div v-if="showDate" class="vac-card-info vac-card-date">
 			{{ message.date }}
@@ -210,6 +211,7 @@
 			</slot>
 		</div>
 	</div>
+  </transition>
 </template>
 
 <script>
@@ -241,7 +243,7 @@ export default {
 		currentUserId: { type: [String, Number], required: true },
 		textMessages: { type: Object, required: true },
 		index: { type: Number, required: true },
-		message: { type: Object, required: true },
+    source: { type: Object, required: true },
 		messages: { type: Array, required: true },
 		editedMessageId: { type: [String, Number], default: null },
 		roomUsers: { type: Array, default: () => [] },
@@ -253,11 +255,11 @@ export default {
 		linkOptions: { type: Object, required: true },
 		usernameOptions: { type: Object, required: true },
 		messageSelectionEnabled: { type: Boolean, required: true },
-		selectedMessages: { type: Array, default: () => [] }
+		selectedMessages: { type: Array, default: () => [] },
+    onMessageAdded: { type: Function, default: () => {} }
 	},
 
 	emits: [
-		'message-added',
 		'open-file',
 		'open-user-tag',
 		'open-failed-message',
@@ -275,7 +277,8 @@ export default {
 			emojiOpened: false,
 			newMessage: {},
 			progressTime: '- : -',
-			hoverAudioProgress: false
+			hoverAudioProgress: false,
+      message: this.source
 		}
 	},
 
@@ -359,13 +362,13 @@ export default {
 	},
 
 	mounted() {
+    console.log('messageAdded')
 		messagesValidation(this.message)
-
-		this.$emit('message-added', {
-			message: this.message,
-			index: this.index,
-			ref: this.$refs.message
-		})
+    this.onMessageAdded({
+      message: this.message,
+      index: this.index,
+      ref: this.$refs.message
+    })
 	},
 
 	methods: {

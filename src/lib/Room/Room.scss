@@ -32,8 +32,7 @@
 		background: var(--chat-content-bg-color);
 		flex: 1;
 		overflow-y: auto;
-		margin-right: 1px;
-		margin-top: 60px;
+		margin-top: 64px;
 		-webkit-overflow-scrolling: touch;
 
 		&.vac-scroll-smooth {
@@ -42,7 +41,7 @@
 	}
 
 	.vac-messages-container {
-		padding: 0 5px 5px;
+		padding: 0 5px;
 	}
 
 	.vac-text-started {

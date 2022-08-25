@@ -193,7 +193,7 @@ export default {
 		userTagsEnabled: { type: Boolean, default: true },
 		emojisSuggestionEnabled: { type: Boolean, default: true },
 		roomMessage: { type: String, default: '' },
-		scrollDistance: { type: Number, default: 60 },
+		scrollDistance: { type: Number, default: 0 },
 		acceptedFiles: { type: String, default: '*' },
 		templatesText: { type: Array, default: null },
 		mediaPreviewEnabled: { type: Boolean, default: true },

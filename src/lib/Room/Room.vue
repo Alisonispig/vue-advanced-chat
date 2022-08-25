@@ -36,76 +36,72 @@
 
 		<div
 			id="messages-list"
-			ref="scrollContainer"
 			class="vac-container-scroll"
-			@scroll="onContainerScroll"
 		>
-			<loader :show="loadingMessages">
-				<template v-for="(idx, name) in $scopedSlots" #[name]="data">
-					<slot :name="name" v-bind="data" />
-				</template>
-			</loader>
-			<div class="vac-messages-container">
-				<div :class="{ 'vac-messages-hidden': loadingMessages }">
-					<transition name="vac-fade-message">
-						<div>
-							<div v-if="showNoMessages" class="vac-text-started">
-								<slot name="messages-empty">
-									{{ textMessages.MESSAGES_EMPTY }}
-								</slot>
-							</div>
-							<div v-if="showMessagesStarted" class="vac-text-started">
-								{{ textMessages.CONVERSATION_STARTED }} {{ messages[0].date }}
-							</div>
-						</div>
-					</transition>
-					<div
-						v-if="messages.length && !messagesLoaded"
-						id="infinite-loader-messages"
-					>
-						<loader :show="true" :infinite="true">
-							<template v-for="(idx, name) in $scopedSlots" #[name]="data">
-								<slot :name="name" v-bind="data" />
-							</template>
-						</loader>
-					</div>
-					<transition-group :key="roomId" name="vac-fade-message" tag="span">
-						<div v-for="(m, i) in messages" :key="m.indexId || m._id">
-							<room-message
-								:current-user-id="currentUserId"
-								:message="m"
-								:index="i"
-								:messages="messages"
-								:edited-message-id="editedMessageId"
-								:message-actions="messageActions"
-								:room-users="room.users"
-								:text-messages="textMessages"
-								:new-messages="newMessages"
-								:show-reaction-emojis="showReactionEmojis"
-								:show-new-messages-divider="showNewMessagesDivider"
-								:text-formatting="textFormatting"
-								:link-options="linkOptions"
-								:username-options="usernameOptions"
-								:message-selection-enabled="messageSelectionEnabled"
-								:selected-messages="selectedMessages"
-								@message-added="onMessageAdded"
-								@message-action-handler="messageActionHandler"
-								@open-file="openFile"
-								@open-user-tag="openUserTag"
-								@open-failed-message="$emit('open-failed-message', $event)"
-								@send-message-reaction="sendMessageReaction"
-								@select-message="selectMessage"
-								@unselect-message="unselectMessage"
-							>
-								<template v-for="(idx, name) in $scopedSlots" #[name]="data">
-									<slot :name="name" v-bind="data" />
-								</template>
-							</room-message>
-						</div>
-					</transition-group>
-				</div>
-			</div>
-		</div>
+      <virtual-list
+        ref="scrollContainer"
+        style="height: 100%;overflow-y: auto;"
+        class="vac-messages-container"
+        :top-threshold="scrollDistance"
+        :data-key="'_id'"
+        :data-sources="messages"
+        :data-component="RoomMessage"
+        :extra-props="{
+              currentUserId:currentUserId,
+              messages:messages,
+              editedMessageId:editedMessageId,
+              messageActions:messageActions,
+              roomUsers: room.users,
+              textMessages: textMessages,
+              newMessages:newMessages,
+              showReactionEmojis: showReactionEmojis,
+              showNewMessagesDivider: showNewMessagesDivider,
+              textFormatting: textFormatting,
+              linkOptions: linkOptions,
+              usernameOptions: usernameOptions,
+              messageSelectionEnabled: messageSelectionEnabled,
+              selectedMessages: selectedMessages,
+              openFile: openFile,
+              openUserTag: openUserTag,
+              sendMessageReaction: sendMessageReaction,
+              unselectMessage: unselectMessage,
+              onMessageAdded: onMessageAdded,
+              selectMessage: selectMessage,
+              messageActionHandler: messageActionHandler,
+            }"
+        @totop="loadMoreMessages"
+        @scroll="onContainerScroll"
+      >
+        <template #header>
+          <loader :show="loadingMessages">
+            <template v-for="(idx, name) in $scopedSlots" #[name]="data">
+              <slot :name="name" v-bind="data" />
+            </template>
+          </loader>
+          <transition name="vac-fade-message">
+            <div>
+              <div v-if="showNoMessages" class="vac-text-started">
+                <slot name="messages-empty">
+                  {{ textMessages.MESSAGES_EMPTY }}
+                </slot>
+              </div>
+              <div v-if="showMessagesStarted" class="vac-text-started">
+                {{ textMessages.CONVERSATION_STARTED }} {{ messages[0].date }}
+              </div>
+            </div>
+          </transition>
+          <div
+            v-if="messages.length && !messagesLoaded"
+            id="infinite-loader-messages"
+          >
+            <loader :show="true" :infinite="true">
+              <template v-for="(idx, name) in $scopedSlots" #[name]="data">
+                <slot :name="name" v-bind="data" />
+              </template>
+            </loader>
+          </div>
+        </template>
+      </virtual-list>
 		<div v-if="!loadingMessages">
 			<transition name="vac-bounce">
 				<div v-if="scrollIcon" class="vac-icon-scroll" @click="scrollToBottom">
@@ -123,7 +119,7 @@
 				</div>
 			</transition>
 		</div>
-
+    </div>
 		<room-footer
 			:room="room"
 			:room-id="roomId"
@@ -156,6 +152,7 @@
 				<slot :name="name" v-bind="data" />
 			</template>
 		</room-footer>
+
 	</div>
 </template>
 
@@ -166,6 +163,7 @@ import SvgIcon from '../../components/SvgIcon/SvgIcon'
 import RoomHeader from './RoomHeader/RoomHeader'
 import RoomFooter from './RoomFooter/RoomFooter'
 import RoomMessage from './RoomMessage/RoomMessage'
+import VirtualList from 'vue-virtual-scroll-list'
 
 export default {
 	name: 'Room',
@@ -174,7 +172,7 @@ export default {
 		SvgIcon,
 		RoomHeader,
 		RoomFooter,
-		RoomMessage
+    VirtualList
 	},
 
 	props: {
@@ -241,14 +239,14 @@ export default {
 			initEditMessage: null,
 			infiniteState: null,
 			loadingMessages: false,
-			observer: null,
 			showLoader: true,
 			loadingMoreMessages: false,
 			scrollIcon: false,
 			scrollMessagesCount: 0,
 			newMessages: [],
 			messageSelectionEnabled: false,
-			selectedMessages: []
+			selectedMessages: [],
+      RoomMessage: RoomMessage
 		}
 	},
 
@@ -285,7 +283,6 @@ export default {
 				this.infiniteState = null
 			} else {
 				if (this.infiniteState) this.infiniteState.loaded()
-				setTimeout(() => this.initIntersectionObserver())
 			}
 		},
 		roomId() {
@@ -295,11 +292,7 @@ export default {
 			deep: true,
 			handler(newVal, oldVal) {
 				newVal.forEach((message, i) => {
-					if (
-						this.showNewMessagesDivider &&
-						!message.seen &&
-						message.senderId !== this.currentUserId
-					) {
+					if (this.showNewMessagesDivider && !message.seen && message.senderId !== this.currentUserId) {
 						this.newMessages.push({
 							_id: message._id,
 							index: i
@@ -326,49 +319,6 @@ export default {
 	},
 
 	methods: {
-		initIntersectionObserver() {
-			if (this.observer) {
-				this.showLoader = true
-				this.observer.disconnect()
-			}
-
-			const loader = document.getElementById('infinite-loader-messages')
-
-			if (loader) {
-				const options = {
-					root: document.getElementById('messages-list'),
-					rootMargin: `${this.scrollDistance}px`,
-					threshold: 0
-				}
-
-				this.observer = new IntersectionObserver(entries => {
-					if (entries[0].isIntersecting) {
-						this.loadMoreMessages()
-					}
-				}, options)
-
-				this.observer.observe(loader)
-			}
-		},
-		preventTopScroll() {
-			const container = this.$refs.scrollContainer
-			const prevScrollHeight = container.scrollHeight
-
-			const observer = new ResizeObserver(_ => {
-				if (container.scrollHeight !== prevScrollHeight) {
-					if (this.$refs.scrollContainer) {
-						this.$refs.scrollContainer.scrollTo({
-							top: container.scrollHeight - prevScrollHeight
-						})
-						observer.disconnect()
-					}
-				}
-			})
-
-			for (var i = 0; i < container.children.length; i++) {
-				observer.observe(container.children[i])
-			}
-		},
 		touchStart(touchEvent) {
 			if (this.singleRoom) return
 
@@ -417,7 +367,7 @@ export default {
 					unwatch()
 
 					setTimeout(() => {
-						element.scrollTo({ top: element.scrollHeight })
+						this.scrollToBottom()
 						this.loadingMessages = false
 					})
 				}
@@ -436,6 +386,7 @@ export default {
 			)
 		},
 		onMessageAdded({ message, index, ref }) {
+      console.log('onMessageAdded')
 			if (index !== this.messages.length - 1) return
 
 			const autoScrollOffset = ref.offsetHeight + 60
@@ -473,7 +424,8 @@ export default {
 				}
 			})
 		},
-		onContainerScroll(e) {
+		onContainerScroll(e, range) {
+      console.log(e, range)
 			if (!e.target) return
 
 			const bottomScroll = this.getBottomScroll(e.target)
@@ -493,7 +445,6 @@ export default {
 						return
 					}
 
-					this.preventTopScroll()
 					this.$emit('fetch-messages')
 					this.loadingMoreMessages = true
 				},
@@ -534,12 +485,9 @@ export default {
 			return scrollHeight - clientHeight - scrollTop
 		},
 		scrollToBottom() {
-			setTimeout(() => {
-				const element = this.$refs.scrollContainer
-				element.classList.add('vac-scroll-smooth')
-				element.scrollTo({ top: element.scrollHeight, behavior: 'smooth' })
-				setTimeout(() => element.classList.remove('vac-scroll-smooth'))
-			}, 50)
+      this.$nextTick(() => {
+        this.$refs.scrollContainer.scrollToBottom()
+      })
 		},
 		openFile({ message, file }) {
 			this.$emit('open-file', { message, file })
